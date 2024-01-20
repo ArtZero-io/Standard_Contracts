@@ -25,18 +25,23 @@ pub struct PSP22Data {
     total_supply: u128,
     balances: Mapping<AccountId, u128>,
     allowances: Mapping<(AccountId, AccountId), u128>,
+    cap: u128
 }
 
 impl PSP22Data {
     /// Creates a token with `supply` balance, initially held by the `creator` account.
-    pub fn new(supply: u128, creator: AccountId) -> PSP22Data {
-        let mut data = PSP22Data {
-            total_supply: supply,
+    pub fn new(cap: u128) -> PSP22Data {
+        let data = PSP22Data {
+            total_supply: Default::default(),
             balances: Default::default(),
             allowances: Default::default(),
+            cap: cap
         };
-        data.balances.insert(creator, &supply);
         data
+    }
+
+    pub fn cap(&self) -> u128 {
+        self.cap
     }
 
     pub fn total_supply(&self) -> u128 {
@@ -214,11 +219,14 @@ impl PSP22Data {
         if value == 0 {
             return Ok(vec![]);
         }
+        if self.total_supply + value > self.cap {
+            return Err(PSP22Error::CapExceeded);
+        }
         let new_supply = self
             .total_supply
             .checked_add(value)
             .ok_or(PSP22Error::Custom(String::from(
-                "Max PSP22 supply exceeded. Max supply limited to 2^128-1.",
+                "Max PSP22 supply exceeded.",
             )))?;
         self.total_supply = new_supply;
         let new_balance = self.balance_of(to).saturating_add(value);

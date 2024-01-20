@@ -7,12 +7,12 @@ mod traits;
 
 pub use data::{PSP22Data, PSP22Event};
 pub use errors::PSP22Error;
-pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22};
+pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22Capped, PSP22};
 
 #[cfg(feature = "contract")]
 #[ink::contract]
 mod token {
-    use crate::{PSP22Data, PSP22Error, PSP22Event, PSP22Metadata, PSP22Mintable, PSP22Burnable, PSP22};
+    use crate::{PSP22Data, PSP22Error, PSP22Event, PSP22Metadata, PSP22Mintable, PSP22Burnable, PSP22Capped, PSP22};
     use ink::prelude::{string::String, vec::Vec};
 
     #[ink(storage)]
@@ -26,13 +26,13 @@ mod token {
     impl Token {
         #[ink(constructor)]
         pub fn new(
-            supply: u128,
+            cap: u128,
             name: Option<String>,
             symbol: Option<String>,
             decimals: u8,
         ) -> Self {
             Self {
-                data: PSP22Data::new(supply, Self::env().caller()), // (2)
+                data: PSP22Data::new(cap), // (2)
                 name,
                 symbol,
                 decimals,
@@ -154,7 +154,6 @@ mod token {
         }
     }
 
-    // (6)
     impl PSP22Metadata for Token {
         #[ink(message)]
         fn token_name(&self) -> Option<String> {
@@ -185,6 +184,13 @@ mod token {
             let events = self.data.burn(from, value)?;
             self.emit_events(events);
             Ok(())
+        }
+    }
+
+    impl PSP22Capped for Token {
+        #[ink(message)]
+        fn cap(&mut self) -> u128 {
+            self.data.cap()
         }
     }
 
