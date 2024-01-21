@@ -9,7 +9,7 @@ mod access_control;
 
 pub use data::{PSP22Data, PSP22Event};
 pub use ownable::OwnableData;
-pub use access_control::{AccessControlData, RoleType};
+pub use access_control::{AccessControlData, RoleType, DEFAULT_ADMIN_ROLE};
 pub use errors::PSP22Error;
 pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22Capped, UpgradeableTrait, Ownable, AccessControl, PSP22};
 
@@ -29,6 +29,7 @@ mod token {
         OwnableData,
         AccessControl, 
         AccessControlData,
+        DEFAULT_ADMIN_ROLE,
         RoleType,
         PSP22
     };
@@ -265,6 +266,14 @@ mod token {
         #[ink(message)]
         fn get_role_admin(&self, role: RoleType) -> RoleType {
             self.access_control_data.get_role_admin(role)
+        }
+
+        #[ink(message)]
+        fn init_admin_role(&mut self) -> Result<(), PSP22Error> {
+            if self.ownable_data.owner() != Some(self.env().caller()) {
+                return Err(PSP22Error::CallerIsNotOwner)
+            }
+            self.access_control_data.grant_role(DEFAULT_ADMIN_ROLE, Some(self.env().caller()))
         }
 
         #[ink(message)]

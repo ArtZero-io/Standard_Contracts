@@ -102,6 +102,9 @@ pub trait AccessControl {
     fn get_role_admin(&self, role: RoleType) -> RoleType;
 
     #[ink(message)]
+    fn init_admin_role(&mut self) -> Result<(), PSP22Error>;
+
+    #[ink(message)]
     fn grant_role(&mut self, role: RoleType, account: Option<AccountId>) -> Result<(), PSP22Error>;
 
     #[ink(message)]
