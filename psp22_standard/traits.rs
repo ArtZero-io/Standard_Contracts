@@ -74,3 +74,21 @@ pub trait PSP22Capped {
     #[ink(message)]
     fn cap(&mut self) -> u128;
 }
+
+#[ink::trait_definition]
+pub trait UpgradeableTrait {
+    #[ink(message)]
+    fn set_code(&mut self, code_hash: [u8; 32]) -> Result<(), PSP22Error>;
+}
+
+#[ink::trait_definition]
+pub trait Ownable {
+    #[ink(message)]
+    fn owner(&self) -> Option<AccountId>;
+
+    #[ink(message)]
+    fn renounce_ownership(&mut self) -> Result<(), PSP22Error>;
+
+    #[ink(message)]
+    fn transfer_ownership(&mut self, new_owner: Option<AccountId>) -> Result<(), PSP22Error>;
+}

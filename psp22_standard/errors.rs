@@ -15,5 +15,7 @@ pub enum PSP22Error {
     ZeroSenderAddress,
     /// Returned if a safe transfer check failed [deprecated].
     SafeTransferCheckFailed(String),
-    CapExceeded
+    CapExceeded,
+    NewOwnerIsNotSet,
+    CallerIsNotOwner
 }

@@ -4,20 +4,23 @@ mod data;
 mod errors;
 mod testing;
 mod traits;
+mod ownable;
 
 pub use data::{PSP22Data, PSP22Event};
+pub use ownable::OwnableData;
 pub use errors::PSP22Error;
-pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22Capped, PSP22};
+pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22Capped, UpgradeableTrait, Ownable, PSP22};
 
 #[cfg(feature = "contract")]
 #[ink::contract]
 mod token {
-    use crate::{PSP22Data, PSP22Error, PSP22Event, PSP22Metadata, PSP22Mintable, PSP22Burnable, PSP22Capped, PSP22};
+    use crate::{PSP22Data, OwnableData, PSP22Error, PSP22Event, PSP22Metadata, PSP22Mintable, PSP22Burnable, PSP22Capped, UpgradeableTrait, Ownable, PSP22};
     use ink::prelude::{string::String, vec::Vec};
 
     #[ink(storage)]
     pub struct Token {
-        data: PSP22Data, // (1)
+        data: PSP22Data,
+        ownable_data: OwnableData,
         name: Option<String>,
         symbol: Option<String>,
         decimals: u8,
@@ -32,7 +35,8 @@ mod token {
             decimals: u8,
         ) -> Self {
             Self {
-                data: PSP22Data::new(cap), // (2)
+                data: PSP22Data::new(cap),
+                ownable_data: OwnableData::new(Some(Self::env().caller())),
                 name,
                 symbol,
                 decimals,
@@ -194,7 +198,42 @@ mod token {
         }
     }
 
-    // (7)
+    impl UpgradeableTrait for Token {
+        #[ink(message)]
+        fn set_code(&mut self, code_hash: [u8; 32]) -> Result<(), PSP22Error> {
+            ink::env::set_code_hash(&code_hash).unwrap_or_else(|err| {
+                panic!(
+                    "Failed to `set_code_hash` to {:?} due to {:?}",
+                    code_hash, err
+                )
+            });
+            Ok(())
+        }
+    }
+
+    impl Ownable for Token {
+        #[ink(message)]
+        fn owner(&self) -> Option<AccountId> {
+            self.ownable_data.owner()
+        }
+
+        #[ink(message)]
+        fn transfer_ownership(&mut self, new_owner: Option<AccountId>) -> Result<(), PSP22Error> {
+            if self.owner() != Some(self.env().caller()) {
+                return Err(PSP22Error::CallerIsNotOwner)
+            }
+            self.ownable_data.transfer_ownership(new_owner)
+        }
+
+        #[ink(message)]
+        fn renounce_ownership(&mut self) -> Result<(), PSP22Error> {
+            if self.owner() != Some(self.env().caller()) {
+                return Err(PSP22Error::CallerIsNotOwner)
+            }
+            self.ownable_data.renounce_ownership()
+        }
+    }
+
     #[cfg(test)]
     mod tests {
         crate::tests!(Token, (|supply| Token::new(supply, None, None, 0)));
