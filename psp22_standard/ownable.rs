@@ -10,7 +10,6 @@ pub struct OwnableData {
 }
 
 impl OwnableData {
-    /// Creates a token with `supply` balance, initially held by the `creator` account.
     pub fn new(owner: Option<AccountId>) -> OwnableData {
         let data = OwnableData {
             owner: owner,

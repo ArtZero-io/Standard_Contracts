@@ -2,7 +2,7 @@ use ink::{
     prelude::{string::String, vec::Vec},
     primitives::AccountId,
 };
-
+use crate::access_control::RoleType;
 use crate::errors::PSP22Error;
 
 #[ink::trait_definition]
@@ -91,4 +91,22 @@ pub trait Ownable {
 
     #[ink(message)]
     fn transfer_ownership(&mut self, new_owner: Option<AccountId>) -> Result<(), PSP22Error>;
+}
+
+#[ink::trait_definition]
+pub trait AccessControl {
+    #[ink(message)]
+    fn has_role(&self, role: RoleType, address: Option<AccountId>) -> bool;
+
+    #[ink(message)]
+    fn get_role_admin(&self, role: RoleType) -> RoleType;
+
+    #[ink(message)]
+    fn grant_role(&mut self, role: RoleType, account: Option<AccountId>) -> Result<(), PSP22Error>;
+
+    #[ink(message)]
+    fn revoke_role(&mut self, role: RoleType, account: Option<AccountId>) -> Result<(), PSP22Error>;
+
+    #[ink(message)]
+    fn renounce_role(&mut self, role: RoleType, account: Option<AccountId>) -> Result<(), PSP22Error>;
 }

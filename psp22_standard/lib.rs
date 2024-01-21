@@ -5,22 +5,40 @@ mod errors;
 mod testing;
 mod traits;
 mod ownable;
+mod access_control;
 
 pub use data::{PSP22Data, PSP22Event};
 pub use ownable::OwnableData;
+pub use access_control::{AccessControlData, RoleType};
 pub use errors::PSP22Error;
-pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22Capped, UpgradeableTrait, Ownable, PSP22};
+pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22Capped, UpgradeableTrait, Ownable, AccessControl, PSP22};
 
 #[cfg(feature = "contract")]
 #[ink::contract]
 mod token {
-    use crate::{PSP22Data, OwnableData, PSP22Error, PSP22Event, PSP22Metadata, PSP22Mintable, PSP22Burnable, PSP22Capped, UpgradeableTrait, Ownable, PSP22};
+    use crate::{
+        PSP22Data,  
+        PSP22Error, 
+        PSP22Event, 
+        PSP22Metadata, 
+        PSP22Mintable, 
+        PSP22Burnable, 
+        PSP22Capped, 
+        UpgradeableTrait, 
+        Ownable,
+        OwnableData,
+        AccessControl, 
+        AccessControlData,
+        RoleType,
+        PSP22
+    };
     use ink::prelude::{string::String, vec::Vec};
 
     #[ink(storage)]
     pub struct Token {
         data: PSP22Data,
         ownable_data: OwnableData,
+        access_control_data: AccessControlData,
         name: Option<String>,
         symbol: Option<String>,
         decimals: u8,
@@ -37,6 +55,7 @@ mod token {
             Self {
                 data: PSP22Data::new(cap),
                 ownable_data: OwnableData::new(Some(Self::env().caller())),
+                access_control_data: AccessControlData::new(),
                 name,
                 symbol,
                 decimals,
@@ -201,6 +220,9 @@ mod token {
     impl UpgradeableTrait for Token {
         #[ink(message)]
         fn set_code(&mut self, code_hash: [u8; 32]) -> Result<(), PSP22Error> {
+            if self.ownable_data.owner() != Some(self.env().caller()) {
+                return Err(PSP22Error::CallerIsNotOwner)
+            }
             ink::env::set_code_hash(&code_hash).unwrap_or_else(|err| {
                 panic!(
                     "Failed to `set_code_hash` to {:?} due to {:?}",
@@ -231,6 +253,42 @@ mod token {
                 return Err(PSP22Error::CallerIsNotOwner)
             }
             self.ownable_data.renounce_ownership()
+        }
+    }
+
+    impl AccessControl for Token {
+        #[ink(message)]
+        fn has_role(&self, role: RoleType, address: Option<AccountId>) -> bool {
+            self.access_control_data.has_role(role, address)
+        }
+
+        #[ink(message)]
+        fn get_role_admin(&self, role: RoleType) -> RoleType {
+            self.access_control_data.get_role_admin(role)
+        }
+
+        #[ink(message)]
+        fn grant_role(&mut self, role: RoleType, account: Option<AccountId>) -> Result<(), PSP22Error> {
+            if !self.access_control_data.only_role(self.get_role_admin(role), Some(self.env().caller())) {
+                return Err(PSP22Error::MissingRole)
+            }
+            self.access_control_data.grant_role(role, account)
+        }
+
+        #[ink(message)]
+        fn revoke_role(&mut self, role: RoleType, account: Option<AccountId>) -> Result<(), PSP22Error> {
+            if !self.access_control_data.only_role(self.get_role_admin(role), Some(self.env().caller())) {
+                return Err(PSP22Error::MissingRole)
+            }
+            self.access_control_data.revoke_role(role, account)
+        }
+
+        #[ink(message)]
+        fn renounce_role(&mut self, role: RoleType, account: Option<AccountId>) -> Result<(), PSP22Error> {
+            if account != Some(self.env().caller()) {
+                return Err(PSP22Error::InvalidCaller)
+            }
+            self.access_control_data.revoke_role(role, account)
         }
     }
 
