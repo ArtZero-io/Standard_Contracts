@@ -11,7 +11,7 @@ pub use data::{PSP22Data, PSP22Event};
 pub use ownable::OwnableData;
 pub use access_control::{AccessControlData, RoleType, DEFAULT_ADMIN_ROLE};
 pub use errors::PSP22Error;
-pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22Capped, UpgradeableTrait, Ownable, AccessControl, PSP22};
+pub use traits::{PSP22Burnable, PSP22Metadata, PSP22Mintable, PSP22Capped, UpgradeableTrait, Ownable, AccessControl, AdminTrait, PSP22};
 
 #[cfg(feature = "contract")]
 #[ink::contract]
@@ -24,7 +24,8 @@ mod token {
         PSP22Mintable, 
         PSP22Burnable, 
         PSP22Capped, 
-        UpgradeableTrait, 
+        UpgradeableTrait,
+        AdminTrait,
         Ownable,
         OwnableData,
         AccessControl, 
@@ -298,6 +299,27 @@ mod token {
                 return Err(PSP22Error::InvalidCaller)
             }
             self.access_control_data.revoke_role(role, account)
+        }
+    }
+
+    impl AdminTrait for Token {
+        #[ink(message)]
+        fn withdraw_fee(&mut self, value: u128, receiver: AccountId) -> Result<(), PSP22Error> {
+            if self.ownable_data.owner() != Some(self.env().caller()) {
+                return Err(PSP22Error::CallerIsNotOwner)
+            }
+            if value > self.env().balance() {
+                return Err(PSP22Error::NotEnoughBalance);
+            }
+            if self.env().transfer(receiver, value).is_err() {
+                return Err(PSP22Error::WithdrawFeeError);
+            }
+            Ok(())
+        }
+
+        #[ink(message)]
+        fn get_balance(&mut self) -> Result<u128, PSP22Error> {
+            Ok(self.env().balance())
         }
     }
 

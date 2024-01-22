@@ -113,3 +113,12 @@ pub trait AccessControl {
     #[ink(message)]
     fn renounce_role(&mut self, role: RoleType, account: Option<AccountId>) -> Result<(), PSP22Error>;
 }
+
+#[ink::trait_definition]
+pub trait AdminTrait {
+    #[ink(message)]
+    fn withdraw_fee(&mut self, value: u128, receiver: AccountId) -> Result<(), PSP22Error>;
+
+    #[ink(message)]
+    fn get_balance(&mut self) -> Result<u128, PSP22Error>;
+}

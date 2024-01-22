@@ -14,5 +14,7 @@ pub enum PSP22Error {
     CallerIsNotOwner,
     RoleRedundant,
     MissingRole,
-    InvalidCaller
+    InvalidCaller,
+    WithdrawFeeError,
+    NotEnoughBalance
 }
