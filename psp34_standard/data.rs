@@ -51,7 +51,7 @@ pub struct PSP34Data {
     token_owner: Mapping<Id, AccountId>,
     operator_approvals: Mapping<(AccountId, AccountId, Option<Id>), ()>,
     balance: Balances,
-    last_token_id: u64,
+    pub last_token_id: u64,
     locked_tokens: Mapping<Id, bool>,
     locked_token_count: u64,
 }

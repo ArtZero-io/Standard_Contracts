@@ -76,6 +76,43 @@ mod token {
                 }
             }
         }
+
+        #[ink(message)]
+        pub fn mint(&mut self) -> Result<(), PSP34Error> {
+            let caller = self.env().caller();
+            if self.ownable_data.owner() != Some(caller) {
+                return Err(PSP34Error::CallerIsNotOwner)
+            }
+            if let Some(last_token_id) = self.data.last_token_id.checked_add(1) {
+                self.data.last_token_id = last_token_id;
+                if self.data.mint(caller, Id::U64(self.data.last_token_id)).is_err(){
+                    return Err(PSP34Error::Custom(String::from("Cannot mint")));
+                }
+                return Ok(());
+            } else {
+                return Err(PSP34Error::Custom(String::from("Cannot increase last token id")));
+            }
+        }
+
+        #[ink(message)]
+        pub fn mint_with_attributes(&mut self, metadata: Vec<(String, String)>) -> Result<(), PSP34Error> {
+            let caller = self.env().caller();
+            if self.ownable_data.owner() != Some(caller) {
+                return Err(PSP34Error::CallerIsNotOwner)
+            }
+            if let Some(last_token_id) = self.data.last_token_id.checked_add(1) {
+                self.data.last_token_id = last_token_id;
+                if self.data.mint(caller, Id::U64(self.data.last_token_id)).is_err(){
+                    return Err(PSP34Error::Custom(String::from("Cannot mint")));
+                }
+                if self.metadata.set_multiple_attributes(Id::U64(self.data.last_token_id), metadata).is_err(){
+                    return Err(PSP34Error::Custom(String::from("Cannot set attributes")));
+                }
+                return Ok(());
+            } else {
+                return Err(PSP34Error::Custom(String::from("Cannot increase last token id")));
+            }
+        }
     }
 
     #[ink(event)]
