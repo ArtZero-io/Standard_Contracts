@@ -187,6 +187,49 @@ mod token {
         fn get_locked_token_count(&self) -> u64 {
             self.data.get_locked_token_count()
         }
+    
+        #[ink(message)]
+        fn set_multiple_attributes(
+            &mut self,
+            token_id: Id,
+            metadata: Vec<(String, String)>
+        ) -> Result<(), PSP34Error> {
+            if self.ownable_data.owner() != Some(self.env().caller()) {
+                return Err(PSP34Error::CallerIsNotOwner)
+            }
+            if self.is_locked_nft(token_id.clone()) {
+                return Err(PSP34Error::IsLockedToken)
+            }
+            self.metadata.set_multiple_attributes(token_id, metadata)
+        }
+        
+        #[ink(message)]
+        fn get_attributes(&self, token_id: Id, attributes: Vec<String>) -> Vec<String> {
+            self.metadata.get_attributes(token_id, attributes)
+        }
+
+        #[ink(message)]
+        fn get_attribute_count(&self) -> u32 {
+            self.metadata.get_attribute_count()
+        }
+        
+        #[ink(message)]
+        fn get_attribute_name(&self, index: u32) -> String {
+            self.metadata.get_attribute_name(index)
+        }
+        
+        #[ink(message)]
+        fn token_uri(&self, token_id: u64) -> String {
+            self.metadata.token_uri(token_id)
+        }
+
+        #[ink(message)]
+        fn set_base_uri(&mut self, uri: String) -> Result<(), PSP34Error> {
+            if self.ownable_data.owner() != Some(self.env().caller()) {
+                return Err(PSP34Error::CallerIsNotOwner)
+            }
+            self.metadata.set_base_uri(uri)
+        }
     }
 
     impl PSP34Metadata for Token {

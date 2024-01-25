@@ -22,5 +22,7 @@ pub enum PSP34Error {
     InvalidCaller,
     WithdrawFeeError,
     NotEnoughBalance,
-    NotTokenOwner
+    NotTokenOwner,
+    IsLockedToken,
+    InvalidInput
 }
